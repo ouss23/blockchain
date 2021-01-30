@@ -11,5 +11,5 @@ let () =
         match read_line() with
         | "show" -> let _ = connect_and_send !port ShowPeers in ()
         | "end" -> exit 0
-        | n -> let _ = connect_and_send !port (Message m) in ()
+        | m -> let _ = connect_and_send !port (Message m) in ()
     done
