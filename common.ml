@@ -2,9 +2,10 @@ open Unix
 type t =
 	| Connect of int 
 	| Message of string
-	| ShowPeers
+	| ShowPeers (*pas utilse*)
 
 let ip = inet inet_addr_of_string "127.0.0.1"
+(*pas utilse*)
 let send chan v =
 	output_value chan v;
 	flush chan
