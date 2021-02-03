@@ -1,6 +1,7 @@
-type block = { m : string; id : int; mutable nonce : int ; finished : bool}
+type block = { m : string; id : int; mutable nonce : int }
 let make_b i m = { m = m; nonce = 0; id = i}
 let blocks n = List.init n (fun i -> make_b i ("blabla"^(string_of_int i)))
+let block_bools n = List.init n (fun i -> false)
 
 (* calcule et retourne le hash en string d'un objet b *)
 let get_hash b = Digest.string (Marshal.to_string b [])
@@ -29,7 +30,6 @@ let m = Mutex.create()
 (* trouver un nonce qui permet d'avoir un hash code
 de bloc commencant par la sequence de 0 *)
 let rec mine_block bl_block bl_thread=
-
     if not bl_block.finished then
         let hash_code = get_hash bl_thread in
         if starts_with header hash_code then 
@@ -84,7 +84,7 @@ let make_inf_threads () = { list_block = blocks !nbr_blocks; finished = false}
 let list_threads = List.init !nbr_Threads(fun i -> List.init !nbr_blocks (fun i -> make_inf_threads () ) )
 
 let () =
-
+    
 
     (* on reformule un peu la fonction mine_blocks pour qu'elle ne prend
     qu'un seul argument qui est l'id du thread *)
@@ -93,4 +93,6 @@ let () =
     let _ = Thread.create aux 0 in
     (* le 2eme va miner les blocs d'id impairs *)
     let _ = Thread.create aux 1 in
+
+
     ignore(read_line ())
