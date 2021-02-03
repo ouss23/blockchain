@@ -53,7 +53,6 @@ let rec mine_block bl_block bl_thread=
         Format.printf "interruption";
         bl_block.nonce
 
-
 (* miner une liste de blocs l,
 en partant de l'element i,
 avec un saut de "step" *)
@@ -80,8 +79,8 @@ let nbr_Threads = ref 2
 let block_list = blocks !nbr_blocks
 
 (* Liste thread contenant * nbr_block non et finished*)
-type inf_threads = { mutable nonce : int ; finished : bool}
-let make_inf_threads () = { nonce = 0; finished = false}
+type inf_threads = { mutable list_block : block list ; finished : bool}
+let make_inf_threads () = { list_block = blocks !nbr_blocks; finished = false}
 let list_inf_threads = List.init !nbr_blocks (fun i -> make_inf_threads () ) 
 let list_threads = List.init !nbr_Threads(fun i -> List.init !nbr_blocks (fun i -> make_inf_threads () ) )
 
