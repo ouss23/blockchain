@@ -79,17 +79,10 @@ let nbr_Threads = ref 2
 (* on essaie sur une liste de 8 blocs *)
 let block_list = blocks !nbr_blocks
 
+(* Liste thread contenant * nbr_block non et finished*)
 type inf_threads = { mutable nonce : int ; finished : bool}
 let make_inf_threads () = { nonce = 0; finished = false}
-(*
-let make_list_threads n = List.init n ( fun -> list_inf_threads !nbr_blocks)
-
-let list_threads = make_list_threads !nbr_Threads
-*)
-
 let list_inf_threads = List.init !nbr_blocks (fun i -> make_inf_threads () ) 
-
-
 let list_threads = List.init !nbr_Threads(fun i -> List.init !nbr_blocks (fun i -> make_inf_threads () ) )
 
 let () =
