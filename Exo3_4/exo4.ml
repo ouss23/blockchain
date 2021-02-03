@@ -1,5 +1,5 @@
 type block = { m : string; id : int; mutable nonce : int ; finished : bool}
-let make_b i m = { m = m; nonce = 0; id = i; finished = false}
+let make_b i m = { m = m; nonce = 0; id = i}
 let blocks n = List.init n (fun i -> make_b i ("blabla"^(string_of_int i)))
 
 (* calcule et retourne le hash en string d'un objet b *)
@@ -81,7 +81,6 @@ let block_list = blocks !nbr_blocks
 (* Liste thread contenant * nbr_block non et finished*)
 type inf_threads = { mutable list_block : block list ; finished : bool}
 let make_inf_threads () = { list_block = blocks !nbr_blocks; finished = false}
-let list_inf_threads = List.init !nbr_blocks (fun i -> make_inf_threads () ) 
 let list_threads = List.init !nbr_Threads(fun i -> List.init !nbr_blocks (fun i -> make_inf_threads () ) )
 
 let () =
