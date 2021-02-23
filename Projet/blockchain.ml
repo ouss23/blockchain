@@ -17,7 +17,7 @@ let pending_transactions = ref []
 let transactions_per_block = 5
 
 (* Fonction pour pusher transaction dans pending_transactions *)
-let addTransaction current_transaction = (
+let addTransaction (current_transaction : transaction)= (
   pending_transactions := current_transaction :: !pending_transactions 
 )
 
