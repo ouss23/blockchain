@@ -37,7 +37,7 @@ let minePendingTransactions miningRewardAdress = (
 )
 
 (* Fonction pour pusher transaction dans pending_transactions *)
-let addTransaction current_transaction = (
+let addTransaction (current_transaction : transaction)= (
     pending_transactions := current_transaction :: !pending_transactions;
     if (List.length !pending_transactions) >= transactions_per_block then
     begin
