@@ -15,48 +15,6 @@ let cmd_to_list command =
 
 
 
-let print_jsp transactions_list = 
-  (List.iter (fun transac ->
-                  Format.printf "fromAddress %s." transac;
-              ) transactions_list;
-  )
-
-
-
-
-let () = (
-
-
-(*
-
-
-  let private_key_cm = Unix.open_process_in "python ../pythonkey/create_private_key.py"in
-
-  let private_key = (input_line private_key_cm) in
-  Printf.printf "%s\n" private_key;
-  Unix.close_process_in private_key_cm;
-
-  let str = "python ../pythonkey/create_public_key.py" ^  private_key in 
-  Printf.printf "%s\n" str;
-
-
-
-
-
-  let public_cm = Unix.open_process_in "python ../pythonkey/create_public_key.py" ^  private_key in
-
-
-  try
-    while true do
-      let private_key = (input_line public_cm) in
-      Printf.printf "%s\n" private_key
-    done
-  with End_of_file -> ();
-  Unix.close_process_in public_cm;
-  ();
-
-  *)
-
  let private_key = cmd_to_list "python ../pythonkey/create_private_key.py"in
 
 

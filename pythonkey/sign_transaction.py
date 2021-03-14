@@ -12,5 +12,5 @@ if __name__ == '__main__':
 
 
 
-    print(str(signature)[2:-1])
-    sys.exit(signature)
+    print(signature.hex())
+    sys.exit(signature.hex())
