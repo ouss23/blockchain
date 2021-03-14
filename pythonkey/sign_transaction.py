@@ -12,5 +12,5 @@ if __name__ == '__main__':
 
 
 
-    print(signature, type(signature), signature)
+    print(str(signature)[2:-1])
     sys.exit(signature)

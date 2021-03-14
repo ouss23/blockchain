@@ -1,6 +1,15 @@
 from function import *
 import sys
+import argparse
 
+
+parser = argparse.ArgumentParser(description='Description of your program')
+parser.add_argument('-p','--public_key', help='Description for foo argument', required=True)
+parser.add_argument('-m','--message', help='Description for bar argument', required=True)
+parser.add_argument('-s','--signature', help='Description for bar argument', required=True)
+args = vars(parser.parse_args())
+
+print("iciiiiiiiiiii", args)
 
 def verify_signature(public_key, message, signature):
     public_key = RSA.import_key(public_key)
@@ -14,9 +23,10 @@ def verify_signature(public_key, message, signature):
 
 
 if __name__ == '__main__':
-    public_key = sys.argv[1]
-    message = sys.argv[2]
-    signature = sys.argv[3]
+
+    public_key = args['public_key'] 
+    message = args['message'] 
+    signature = args['signature'].encode("utf-8") 
 
     print(public_key, message, signature)
     boo = verify_signature(public_key, message, signature)
