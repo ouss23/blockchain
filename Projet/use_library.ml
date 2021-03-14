@@ -15,6 +15,19 @@ let cmd_to_list command =
 
 
 
+let print_jsp transactions_list = 
+  (List.iter (fun transac ->
+                  Format.printf "fromAddress %s." transac;
+              ) transactions_list;
+  )
+
+
+
+
+let () = (
+
+
+
  let private_key = cmd_to_list "python ../pythonkey/create_private_key.py"in
 
 

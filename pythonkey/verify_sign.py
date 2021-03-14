@@ -28,7 +28,6 @@ if __name__ == '__main__':
     message = args['message'] 
     signature = bytes.fromhex(args['signature'])
 
-    print(public_key, message, signature)
     boo = verify_signature(public_key, message, signature)
 
 
