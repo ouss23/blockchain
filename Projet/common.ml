@@ -2,25 +2,30 @@ open Unix
 open Block
 open Transaction
 
+module Int =
+struct
+    type t = int
+    let compare = compare
+end
+
+module S = Set.Make(Int)
+
 (* Un type qui represente l'etat d'un transaction *)
 type transaction_status =
 	| Pending of int * int
-	| Accepted of int * int (* +proof *)
+	| Accepted of int * int * (string list)
 	| Refused of string
 	| NotFound
 
 type message =
 	| Connect of int
-	| UpdateBlocks of (block list)
+	| Init of (S.t) * (transaction list) * (block list)
+	| MinedBlock of (block list) * transaction
 	| AddTransaction of transaction
 	| GetTransactionStatus of int * int
 	| TransactionStatus of transaction_status
 	| GetBalance of string
 	| Balance of string * int
-	(*
-	| Message of string
-	| ShowPeers
-		*)
 
 let ip = inet_addr_of_string "127.0.0.1"
 

@@ -17,11 +17,5 @@ let get_hash b =
 let check_block b difficulty =
     check (get_hash b) difficulty
 
-(* miner un bloc *)
-let rec puzzle b difficulty =
- if check_block b difficulty then b
- else
-  puzzle { b with nonce = b.nonce + 1 } difficulty
-
 let print_block b =
     Format.printf "Bloc : id = %d, prev_hash = [%s], nonce = %d, transactions count = %d @." b.id b.prev_hash b.nonce (List.length b.list_transactions);

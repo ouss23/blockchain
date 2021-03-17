@@ -2,6 +2,8 @@ open Unix
 open Common
 open Block
 open Transaction
+open Mutex
+open Merkle_tree
 
 let port = ref 8000
 
@@ -20,15 +22,15 @@ let addr = ADDR_INET(ip,!port)
 (* création de la socket IPv4, TCP *)
 let s = socket PF_INET SOCK_STREAM 0
 
-module Int =
+(*module Int =
 struct
     type t = int
     let compare = compare
 end
 
-module S = Set.Make(Int)
+module S = Set.Make(Int)*)
 
-let peers = ref (S.singleton !port)
+let peers = ref (Common.S.singleton !port)
 
 (* liste des messages, stockés sous forme de hash *)
 let messages = ref S.empty
@@ -47,15 +49,8 @@ let print_peers () =
     S.iter (Format.printf "%d ") !peers;
     Format.printf "@."
 
-let connect_to_peer () =
-    match !register with
-        | None -> ()
-        | Some r ->
-            Format.printf "connecting to %d@." r;
-            let in_chan, _ = connect_and_send r (Connect !port) in
-            peers := input_value in_chan
-
 let broadcast v =
+	add_message v;
     S.iter (fun p ->
         if p <> !port then let _ = connect_and_send p v in ()) !peers
 			
@@ -66,7 +61,7 @@ let miningReward = 10
 let mined_blocks = ref []
 
 (* difficulte de minning *)
-let difficulty = 3
+let difficulty = 2
 
 (* liste de transactions en attente de la blockchain *)
 let pending_transactions = ref []
@@ -79,6 +74,9 @@ let miningRewardFromAddress = "block chain"
 
 (* la valeur de prev_hash du premier bloc *)
 let genesis_prev_hash = "0"
+
+(* un mutex protegeant l'acces a la liste de transactions et de blocs *)
+let lock = Mutex.create()
 
 (* verifier si une liste de blocs est correcte
 l'enchainement des hashes + les bons nonces *)
@@ -103,28 +101,74 @@ let check_blocks_authenticity b_l =
     (* liste vide, on retourne True *)
     | _ -> true
 
+(* retourne le hash du dernier block mine *)
 let last_bloc_hash () =
     if (List.length !mined_blocks) = 0 then
         genesis_prev_hash
     else
         get_hash (List.hd (List.rev !mined_blocks))
 		
+(* verifie si la liste 2 contient tous les elements de l1 *)
+let contains_all l1 l2 =
+	List.for_all (fun x -> List.mem x l2) l1
+	
+(* une reimplementation de List.filter_map qui n'est pas dispo sur ocaml < 4.08 *)
+let rec filter_map f l =
+	match l with
+	| [] -> []
+	| hd :: tl -> 
+		(match (f hd) with
+		| Some e -> (e :: (filter_map f tl))
+		| None -> filter_map f tl)
+	
+(* exclure de l2 tous les elements de l1, et retourner l2 *)
+let exclude_all l1 l2 =
+	filter_map (fun x -> if List.mem x l1 then None else Some x) l2	
+
+(* miner un bloc *)
+let rec puzzle b difficulty n_bl =
+	if check_block b difficulty then Some b
+	else
+	begin
+		if (List.length !mined_blocks = n_bl) then
+ 			puzzle { b with nonce = b.nonce + 1 } difficulty n_bl
+		else
+			None
+	end
+	   
 (* Fonction qui mine un block avec la liste des transactions en attente
 On met l'adresse du mineur pour qu'il soit recompense *)
 let minePendingTransactions miningRewardAdress = (
-	Format.printf "Mining the following transactions :@.";
-	print_transactions !pending_transactions;
-    let first_transactions = List.init transactions_per_block (fun i -> List.nth !pending_transactions i) in
-    let remaining_transactions = List.init ((List.length !pending_transactions) - transactions_per_block)
-                                            (fun i -> List.nth !pending_transactions (i + transactions_per_block)) in
-	let current_block = make_block_w_transac (List.length !mined_blocks) (last_bloc_hash ()) first_transactions in
-    let mined_block = puzzle current_block difficulty in
-    mined_blocks := !mined_blocks @ [mined_block];
-    pending_transactions := (make_transaction miningRewardFromAddress miningRewardAdress miningReward) :: remaining_transactions;
-    
-    Format.printf "Block %d mined with nonce %d@." mined_block.id mined_block.nonce;
-
-    pending_transactions := List.init 1 (fun i -> make_transaction miningRewardFromAddress miningRewardAdress miningReward);
+	Mutex.lock lock;
+	let n_bl = List.length !mined_blocks in
+	let n_tr = List.length !pending_transactions in
+	Mutex.unlock lock;
+	if (n_tr < transactions_per_block) then Format.printf "No enough transactions to mine@."
+	else
+	begin
+    	let first_transactions = List.init transactions_per_block (fun i -> List.nth !pending_transactions i) in
+		Format.printf "Mining the following transactions :@.";
+		print_transactions first_transactions;
+		(*let remaining_transactions = List.init ((List.length !pending_transactions) - transactions_per_block)
+    	                 (fun i -> List.nth !pending_transactions (i + transactions_per_block)) in*)
+		let current_block = make_block_w_transac (List.length !mined_blocks) (last_bloc_hash ()) first_transactions in
+    	let mined_block = puzzle current_block difficulty n_bl in
+		match mined_block with
+		| Some b ->
+			(Mutex.lock lock;
+			if (((List.length !mined_blocks) = n_bl) && (contains_all first_transactions !pending_transactions)) then
+			begin
+				mined_blocks := !mined_blocks @ [b];
+				let reward = make_transaction miningRewardFromAddress miningRewardAdress miningReward in
+    			pending_transactions := reward :: (exclude_all first_transactions !pending_transactions);
+				Format.printf "Block %d mined with nonce %d, broadcasting blockchain...@." b.id b.nonce;
+				broadcast (MinedBlock (!mined_blocks, reward))
+			end
+			else
+    			begin Format.printf "Blockchain changed, dropping mined block@." end;
+			Mutex.unlock lock;)
+		| None -> Format.printf "Blockchain changed, mining interrupted@.";
+	end
 )
 
 (* Fonction qui dit l'etat du compte d'une adresse dans une blockchain *)
@@ -157,6 +201,9 @@ let index_of e l =
 	in
 	aux e l 0
 		
+let get_transaction_proof bl_id tr_id =
+	let mtree = make (to_hash_list (List.nth !mined_blocks bl_id).list_transactions) in
+	proof mtree tr_id
 
 let get_transaction_status tr =
 	match index_of tr !pending_transactions with
@@ -167,7 +214,7 @@ let get_transaction_status tr =
 			| [] -> NotFound
 			| hd :: tl ->
 				match index_of tr hd.list_transactions with
-				| Some i -> Accepted (ind, i)
+				| Some i -> Accepted (ind, i, get_transaction_proof ind i)
 				| None -> find_in_blocks tl (ind + 1)
 		in
 		find_in_blocks !mined_blocks 0
@@ -175,7 +222,7 @@ let get_transaction_status tr =
 let get_transaction_status_at block_id tr_id =
 	if block_id < (List.length !mined_blocks) then
 		if tr_id < transactions_per_block then
-			Accepted (block_id, tr_id)
+			Accepted (block_id, tr_id, get_transaction_proof block_id tr_id)
 		else
 			NotFound
 	else if block_id = (List.length !mined_blocks) then 
@@ -193,23 +240,57 @@ let addTransaction (current_transaction : transaction)= (
 		Refused "Not enough balance")
 	else
 	begin
+		Mutex.lock lock;
     	pending_transactions := !pending_transactions @ [current_transaction];
+		Mutex.unlock lock;
+		get_transaction_status current_transaction
+	end
+)
+
+let update_blockchain_with new_chain reward =
+	Mutex.lock lock;
+	if (List.length !mined_blocks) >= (List.length new_chain) then
+		Format.printf "Received blockchain of size %d is ignored because local blockchain is of size %d@."
+		(List.length new_chain) (List.length !mined_blocks)
+	else if not (check_blocks_authenticity new_chain) then
+		Format.printf "Received blockchain is not correct@."
+	else
+		(Format.printf "Updating local blockchain of size %d with a new version of size %d@."
+		(List.length !mined_blocks) (List.length new_chain);
+		mined_blocks := new_chain;
+		pending_transactions := reward 
+			:: (exclude_all (List.flatten (List.map (fun e -> e.list_transactions) !mined_blocks))
+				!pending_transactions));
+	Mutex.unlock lock
+		
+
+let connect_to_peer () =
+    match !register with
+        | None -> 
+			(pending_transactions := [make_transaction "root" "toto" 100;
+			make_transaction "root" "toto" 100;
+			make_transaction "root" "toto" 100];)
+        | Some r ->
+            Format.printf "connecting to %d@." r;
+            let in_chan, _ = connect_and_send r (Connect !port) in
+			match input_value in_chan with
+			| Init (prs, ptr, mbl) -> (peers := prs;
+				pending_transactions := ptr; Format.printf "pending transactions length %d@." (List.length !pending_transactions);
+			mined_blocks := mbl)
+			| _ -> ()
+
+let start_miner arg =
+	Format.printf "Miner started@.";
+	while true do
     	if (List.length !pending_transactions) >= transactions_per_block then 
 		begin 
 			minePendingTransactions "miner";
        		Format.printf "Blockchain authenticity : %b @." (check_blocks_authenticity !mined_blocks)
     	end;
-		get_transaction_status current_transaction
-	end
-)
+		Unix.sleep 1;
+	done
 
-let () =
-	pending_transactions := [make_transaction "root" "toto" 100;
-		make_transaction "root" "toto" 100;
-		make_transaction "root" "toto" 100];
-		
-	minePendingTransactions "miner";
-
+let start_listener arg =
     setsockopt s SO_REUSEADDR true;
     bind s addr;
     listen s 5;
@@ -221,20 +302,33 @@ let () =
         let in_chan = in_channel_of_descr sc in
         let out_chan = out_channel_of_descr sc in
         let m = input_value in_chan in
-        match m with
-        | Connect p ->
-            Format.printf "Peer %d is connecting to P2P@." p;
-            peers := S.add p !peers;
-            send out_chan !peers;
-        | UpdateBlocks bl -> List.iter print_block bl
-		| AddTransaction tr -> 
-			Format.printf "Received transaction request from wallet@.";
-			send out_chan (addTransaction tr);
-		| GetBalance id ->
-			Format.printf "Received balance check request from wallet@.";
-			send out_chan (Balance (id, getBalanceOfAddress id))
-		| GetTransactionStatus (bid, tid) ->
-			Format.printf "Received transaction status check request from wallet@.";
-			send out_chan (get_transaction_status_at bid tid);
-		| _ -> Format.printf "Bad message type@.";
+		if not (already_received m) then
+		begin
+        	match m with
+        	| Connect p ->
+        	    Format.printf "Peer %d is connecting to P2P@." p;
+        	    peers := S.add p !peers;
+        	    send out_chan (Init (!peers, !pending_transactions, !mined_blocks));
+        	| MinedBlock (bl, rw) -> 
+				add_message m;
+				update_blockchain_with bl rw;
+			| AddTransaction tr -> 
+				add_message m;
+				Format.printf "Received transaction request from wallet@.";
+				broadcast m;
+				send out_chan (addTransaction tr);
+			| GetBalance id ->
+				Format.printf "Received balance check request from wallet@.";
+				send out_chan (Balance (id, getBalanceOfAddress id))
+			| GetTransactionStatus (bid, tid) ->
+				Format.printf "Received transaction status check request from wallet@.";
+				send out_chan (get_transaction_status_at bid tid);
+			| _ -> Format.printf "Bad message type@.";
+		end
     done
+	
+
+let () =
+	let th_fun = (fun i -> start_miner 0) in
+	let _ = Thread.create th_fun 0 in
+	start_listener 1;

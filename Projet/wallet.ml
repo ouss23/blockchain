@@ -38,7 +38,7 @@ let () =
 				let answer = input_value in_chan in
 				match answer with
 				| Pending (bl_id, tr_id) -> Format.printf "Transaction is pending, will be added to %d-%d@." bl_id tr_id;
-				| Accepted (bl_id, tr_id) -> Format.printf "Transaction added to %d-%d@." bl_id tr_id;
+				| Accepted (bl_id, tr_id, prf) -> Format.printf "Transaction added to %d-%d@." bl_id tr_id;
 				| NotFound -> Format.printf "Transaction not found@."
 				| _ -> Format.printf "Bad answer@.";
 			end
