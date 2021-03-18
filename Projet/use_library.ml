@@ -22,65 +22,65 @@ let print_jsp transactions_list =
   )
 
 
+let create_private_key = (
+    let private_key = cmd_to_list "python ../pythonkey/create_private_key.py" in
+    String.concat "\n" private_key
+  
+  )
 
+let create_public_key private_key = (
+  let tmp = "python ../pythonkey/create_public_key.py '" ^ private_key ^"'" in
+    let public_key = cmd_to_list  tmp in
+    String.concat "\n" public_key 
+  
+  )
+
+  let sign_transaction_method private_key message = (
+    let signature = "python ../pythonkey/sign_transaction.py '"  ^ private_key ^ "' '" ^ message ^"'"  in
+    let signature = cmd_to_list  signature in
+    String.concat "\n" signature  
+  
+  )
+  let verify_sign_method public_key message signature = (
+  let cmd = "python ../pythonkey/verify_sign.py --public_key '"  ^ public_key ^ "' --message '" ^ message ^"' --signature '"  ^ signature ^ "'"    in
+  let verif = cmd_to_list  cmd in
+  let verif = String.concat "\n" verif in
+
+  verif = "True"
+  
+
+)
 
 let () = (
 
 
 
- let private_key = cmd_to_list "python ../pythonkey/create_private_key.py"in
-
-
-
- let private_key = String.concat "\n" private_key in 
-
-
-
-
-
-
- Printf.printf "icii%s\n" private_key;
+ let private_key = create_private_key in
 
 
  
- let public_key = "python ../pythonkey/create_public_key.py '"  ^ private_key ^"'" in
-
- Printf.printf "icii%s\n" public_key;
-
-
-
- let public_key = cmd_to_list public_key in
-
- let public_key = String.concat "\n" public_key in 
-
- Printf.printf "icii last%s\n" public_key;
+ let public_key = create_public_key private_key in
 
  let message = "salut Oussama" in
- 
- let sign_transaction = "python ../pythonkey/sign_transaction.py '"  ^ private_key ^ "' '" ^ message ^"'" in
- Printf.printf "icii%s\n" sign_transaction;
-
-
- let sign_transaction = cmd_to_list sign_transaction in
-
- let sign_transaction = String.concat "\n" sign_transaction in 
-
- Printf.printf "icii signature %s\n" sign_transaction;
-
- let verify_sign = "python ../pythonkey/verify_sign.py --public_key '"  ^ public_key ^ "' --message '" ^ message ^"' --signature '"  ^ sign_transaction ^ "'"    in
-
- Printf.printf "icii%s\n" verify_sign;
-
-
- let verify_sign = cmd_to_list verify_sign in
-
- let verify_sign = String.concat "\n" verify_sign in 
-
- Printf.printf "icii verify %s\n" verify_sign;
 
 
 
- ()
+ let sign_transaction = sign_transaction_method private_key message in
+
+
+
+ let verify_sign = verify_sign_method public_key message sign_transaction in
+ Printf.printf "icii%b\n" verify_sign;
+
+
+ let verify_sign = verify_sign_method "public_key" message sign_transaction in
+ Printf.printf "icii%b\n" verify_sign;
+
+
+
+
+
+
 
 
 );
