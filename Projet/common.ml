@@ -13,7 +13,7 @@ module S = Set.Make(Int)
 (* Un type qui represente l'etat d'un transaction *)
 type transaction_status =
 	| Pending of int * int
-	| Accepted of int * int * (string list)
+	| Accepted of int * int * transaction * (string list) * string
 	| Refused of string
 	| NotFound
 

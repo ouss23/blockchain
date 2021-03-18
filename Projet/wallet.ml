@@ -1,6 +1,7 @@
 open Unix
 open Common
 open Transaction
+open Merkle_tree
 
 let port = ref 8000
 
@@ -19,7 +20,9 @@ let () =
 				let answer = input_value in_chan in
 				match answer with
 					| Pending (bl_id, tr_id) -> Format.printf "Transaction is pending, will be added to %d-%d@." bl_id tr_id;
-					| Accepted (bl_id, tr_id) -> Format.printf "Transaction added to %d-%d@." bl_id tr_id;
+					| Accepted (bl_id, tr_id, tr_, prf, bl_hs) -> 
+						Format.printf "Transaction added to %d-%d@." bl_id tr_id;
+						Format.printf "Transaction authenticity : %b@." (authenticate (string_hash tr) prf bl_hs);
 					| Refused m -> Format.printf "Transaction refused : %s@." m;
 					| _ -> Format.printf "Bad answer@.";
 			end
@@ -38,7 +41,11 @@ let () =
 				let answer = input_value in_chan in
 				match answer with
 				| Pending (bl_id, tr_id) -> Format.printf "Transaction is pending, will be added to %d-%d@." bl_id tr_id;
-				| Accepted (bl_id, tr_id, prf) -> Format.printf "Transaction added to %d-%d@." bl_id tr_id;
+				| Accepted (bl_id, tr_id, tr, prf, bl_hs) ->
+					let tr_fake = make_transaction "fake toto" "fake titi" 10 in
+					Format.printf "Transaction added to %d-%d@." bl_id tr_id;
+					Format.printf "Transaction authenticity : %b@." (authenticate (string_hash tr) prf bl_hs);
+					Format.printf "Testing authenticity with fake transaction : %b@." (authenticate (string_hash tr_fake) prf bl_hs);
 				| NotFound -> Format.printf "Transaction not found@."
 				| _ -> Format.printf "Bad answer@.";
 			end

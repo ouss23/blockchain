@@ -5,7 +5,16 @@
 *)
 type t = E | N of Z.t * t * t * int
 
-let hash x = x
+let of_string s = Z.of_string_base 16 s
+
+(*let hash x =
+	of_string (Digest.string (Marshal.to_string x []))*)
+
+let string_hash m =
+	string_of_int (Hashtbl.hash m)
+
+let hash m =
+	of_string (string_hash m)
 
 let empty = E
 
@@ -27,8 +36,6 @@ let rec merkel_of_list l =
 	| [] -> E
 	| [t] -> t
 	| _ -> merkel_of_list (fusion l)
-	
-let of_string s = Z.of_string_base 16 s
 
 (* construire un arbre de merkle a partir d'une liste d'empreintes *)
 let make l =
@@ -48,6 +55,9 @@ let rec proof t i =
 	| N(_, g, d, lvl) -> let b = 1 lsl (lvl - 1) in
 		if i < b then (hash_root d)::(proof g i) else (hash_root g)::(proof d (i - b))
 		
+let to_hash_list l =
+	List.map string_hash l
+
 (* verifier si une preuve "pr" de la transaction "tr" est correcte *)
 let authenticate tr pr root =
 	let tr = of_string tr in
@@ -55,13 +65,3 @@ let authenticate tr pr root =
 	let pr = List.map of_string pr in
 	let x = List.fold_right (fun h x -> hash (Z.add h x)) pr (hash tr) in
 	x = root
-
-let () =
-	let ls = ["ab"; "bc"; "cd"] in
-	let mtree = make ls in
-	let prf1 = proof mtree 0 in
-	let prf2 = proof mtree 2 in
-	(
-		Format.printf "ab in tree : %b @." (authenticate "ab" prf1 (hash_root mtree));
-		Format.printf "cd in tree : %b @." (authenticate "cd" prf2 (hash_root mtree));
-	)

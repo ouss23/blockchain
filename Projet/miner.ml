@@ -203,7 +203,7 @@ let index_of e l =
 		
 let get_transaction_proof bl_id tr_id =
 	let mtree = make (to_hash_list (List.nth !mined_blocks bl_id).list_transactions) in
-	proof mtree tr_id
+	(proof mtree tr_id), (hash_root mtree)
 
 let get_transaction_status tr =
 	match index_of tr !pending_transactions with
@@ -214,7 +214,9 @@ let get_transaction_status tr =
 			| [] -> NotFound
 			| hd :: tl ->
 				match index_of tr hd.list_transactions with
-				| Some i -> Accepted (ind, i, get_transaction_proof ind i)
+				| Some i -> 
+					let mtree = make (to_hash_list (List.nth !mined_blocks ind).list_transactions) in
+					Accepted (ind, i, tr, proof mtree i, hash_root mtree)
 				| None -> find_in_blocks tl (ind + 1)
 		in
 		find_in_blocks !mined_blocks 0
@@ -222,7 +224,9 @@ let get_transaction_status tr =
 let get_transaction_status_at block_id tr_id =
 	if block_id < (List.length !mined_blocks) then
 		if tr_id < transactions_per_block then
-			Accepted (block_id, tr_id, get_transaction_proof block_id tr_id)
+			let mtree = make (to_hash_list (List.nth !mined_blocks block_id).list_transactions) in
+			Accepted (block_id, tr_id,
+				List.nth (List.nth !mined_blocks block_id).list_transactions tr_id, proof mtree tr_id, hash_root mtree)
 		else
 			NotFound
 	else if block_id = (List.length !mined_blocks) then 
