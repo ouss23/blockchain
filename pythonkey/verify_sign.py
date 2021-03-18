@@ -9,7 +9,6 @@ parser.add_argument('-m','--message', help='Description for bar argument', requi
 parser.add_argument('-s','--signature', help='Description for bar argument', required=True)
 args = vars(parser.parse_args())
 
-print("iciiiiiiiiiii", args)
 
 def verify_signature(public_key, message, signature):
     public_key = RSA.import_key(public_key)
@@ -23,17 +22,19 @@ def verify_signature(public_key, message, signature):
 
 
 if __name__ == '__main__':
+    try:
 
-    public_key = args['public_key'] 
-    message = args['message'] 
-    signature = bytes.fromhex(args['signature'])
+        public_key = args['public_key'] 
+        message = args['message'] 
+        signature = bytes.fromhex(args['signature'])
 
-    boo = verify_signature(public_key, message, signature)
+        boo = verify_signature(public_key, message, signature)
+        print(boo)
+
+    except:
+        print("False")
 
 
 
-    print(boo)
-
-    sys.exit(boo)
 
 
