@@ -1,7 +1,7 @@
 open Transaction
 
 (* type de blocs *)
-type block = { id : int; prev_hash : string; nonce : int; list_transactions :  transaction list}
+type block = { id : int; prev_hash : string; nonce : int; list_transactions :  transaction list }
 
 (* creer un bloc a partir d'une liste de transactions *)
 let make_block_w_transac id_arg prev_hash_arg list_transactions_arg = {id=id_arg; prev_hash=prev_hash_arg; nonce = 0; list_transactions=list_transactions_arg}

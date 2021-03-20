@@ -1,5 +1,5 @@
-
 open Unix
+
 let process_output_to_list2 = fun command -> 
   let chan = Unix.open_process_in command in
   let res = ref ([] : string list) in
@@ -22,7 +22,7 @@ let print_jsp transactions_list =
   )
 
 
-let create_private_key = (
+let create_private_key () = (
     let private_key = cmd_to_list "python ../pythonkey/create_private_key.py" in
     String.concat "\n" private_key
   

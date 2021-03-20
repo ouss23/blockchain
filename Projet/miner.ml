@@ -4,6 +4,7 @@ open Block
 open Transaction
 open Mutex
 open Merkle_tree
+open Random
 
 let port = ref 8000
 
@@ -61,7 +62,7 @@ let miningReward = 10
 let mined_blocks = ref []
 
 (* difficulte de minning *)
-let difficulty = 2
+let difficulty = 3
 
 (* liste de transactions en attente de la blockchain *)
 let pending_transactions = ref []
@@ -138,7 +139,7 @@ let rec puzzle b difficulty n_bl =
 	   
 (* Fonction qui mine un block avec la liste des transactions en attente
 On met l'adresse du mineur pour qu'il soit recompense *)
-let minePendingTransactions miningRewardAdress = (
+let mine_pending_transactions miningRewardAdress = (
 	Mutex.lock lock;
 	let n_bl = List.length !mined_blocks in
 	let n_tr = List.length !pending_transactions in
@@ -152,7 +153,10 @@ let minePendingTransactions miningRewardAdress = (
 		(*let remaining_transactions = List.init ((List.length !pending_transactions) - transactions_per_block)
     	                 (fun i -> List.nth !pending_transactions (i + transactions_per_block)) in*)
 		let current_block = make_block_w_transac (List.length !mined_blocks) (last_bloc_hash ()) first_transactions in
-    	let mined_block = puzzle current_block difficulty n_bl in
+		(* commencer a miner a partir d'une valeur aleatoire, pour ne pas toujours avoir le meme miner qui gagne *)
+		let start_from = (Random.int 10000000) in
+		Format.printf "Start nonce : %d@." start_from;
+		let mined_block = puzzle { current_block with nonce = start_from } difficulty n_bl in
 		match mined_block with
 		| Some b ->
 			(Mutex.lock lock;
@@ -171,26 +175,27 @@ let minePendingTransactions miningRewardAdress = (
 	end
 )
 
-(* Fonction qui dit l'etat du compte d'une adresse dans une blockchain *)
-let getBalanceOfAddress address = (
+(* Retourne un pair (balance, balance with pending) *)
+let get_balance_of_address address = (
   let balance = ref 0 in
+  let from_transac transac = (
+      if address = transac.fromAddress then
+      begin
+          balance := !balance - transac.amount
+      end;
+
+      if address = transac.toAddress then
+      begin
+          balance := !balance + transac.amount
+      end;
+  ) in
   List.iter (fun current_block ->
     (* Format.printf "Parse list of block : %d with balance %d @." current_block.id !balance; *)
-    List.iter (fun transac ->
-        (* Format.printf "fromAddress %s toAddress %s amount %d@." transac.fromAddress transac.toAddress transac.amount; *)
-
-        if address = transac.fromAddress then
-        begin
-            balance := !balance - transac.amount
-        end;
-
-        if address = transac.toAddress then
-        begin
-            balance := !balance + transac.amount
-        end;
-    ) current_block.list_transactions
+    List.iter from_transac current_block.list_transactions
   ) !mined_blocks;
-  !balance
+  let confirmed = !balance in
+  List.iter from_transac !pending_transactions;
+  (confirmed, !balance)
 )
 
 let index_of e l =
@@ -239,8 +244,12 @@ let get_transaction_status_at block_id tr_id =
 
 (* Fonction pour pusher transaction dans pending_transactions *)
 let addTransaction (current_transaction : transaction)= (
-	if ((getBalanceOfAddress current_transaction.fromAddress) < current_transaction.amount) then
-		(Format.printf "Refused transaction, balance of sender is : %d @." (getBalanceOfAddress current_transaction.fromAddress);
+	let confirmed, pending = get_balance_of_address current_transaction.fromAddress in
+	if (pending < current_transaction.amount) then
+		(Format.printf "Refused transaction, pending balance of sender is : %d @." pending;
+		Refused "Not enough balance")
+	else if (confirmed < current_transaction.amount) then
+		(Format.printf "Refused transaction, balance of sender is : %d @." confirmed;
 		Refused "Not enough balance")
 	else
 	begin
@@ -288,7 +297,7 @@ let start_miner arg =
 	while true do
     	if (List.length !pending_transactions) >= transactions_per_block then 
 		begin 
-			minePendingTransactions "miner";
+			mine_pending_transactions "miner";
        		Format.printf "Blockchain authenticity : %b @." (check_blocks_authenticity !mined_blocks)
     	end;
 		Unix.sleep 1;
@@ -323,7 +332,8 @@ let start_listener arg =
 				send out_chan (addTransaction tr);
 			| GetBalance id ->
 				Format.printf "Received balance check request from wallet@.";
-				send out_chan (Balance (id, getBalanceOfAddress id))
+				let confirmed, pending = get_balance_of_address id in
+				send out_chan (Balance (id, confirmed, pending))
 			| GetTransactionStatus (bid, tid) ->
 				Format.printf "Received transaction status check request from wallet@.";
 				send out_chan (get_transaction_status_at bid tid);
@@ -333,6 +343,7 @@ let start_listener arg =
 	
 
 let () =
+	Random.init !port;
 	let th_fun = (fun i -> start_miner 0) in
 	let _ = Thread.create th_fun 0 in
 	start_listener 1;

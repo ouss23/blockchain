@@ -1,7 +1,7 @@
 open Unix
 
 (* type de transactions *)
-type transaction = { fromAddress : string; toAddress : string; amount : int; timestamp : int; mutable signature : string}
+type transaction = { fromAddress : string; toAddress : string; amount : int; timestamp : int; mutable signature : string }
 
 (* creer une transaction *)
 let make_transaction fromAddress_arg toAddress_arg amount_arg =
@@ -10,7 +10,7 @@ let make_transaction fromAddress_arg toAddress_arg amount_arg =
 	amount = amount_arg;
 	timestamp = int_of_float (Unix.time ());
 	signature = ""}
-
+(*
 (*Pour signer une transaction il utilise cryptae.ml*)
 let sign_transaction transaction private_key = (
 	let public_key = create_public_key private_key in
@@ -47,7 +47,7 @@ let isValid transaction = (
 				end;
 			end;
 )
-
+*)
 	
 
 let print_transaction tr =

@@ -25,7 +25,7 @@ type message =
 	| GetTransactionStatus of int * int
 	| TransactionStatus of transaction_status
 	| GetBalance of string
-	| Balance of string * int
+	| Balance of string * int * int
 
 let ip = inet_addr_of_string "127.0.0.1"
 
