@@ -71,7 +71,7 @@ let pending_transactions = ref []
 let transactions_per_block = 3
 
 (* l'adresse qui recompense les miners *)
-let miningRewardFromAddress = "block chain"
+let miningRewardFromAddress = "root"
 
 (* la valeur de prev_hash du premier bloc *)
 let genesis_prev_hash = "0"
@@ -251,6 +251,9 @@ let addTransaction (current_transaction : transaction)= (
 	else if (confirmed < current_transaction.amount) then
 		(Format.printf "Refused transaction, balance of sender is : %d @." confirmed;
 		Refused "Not enough balance")
+	else if not (is_valid current_transaction) then
+		(Format.printf "Refused transaction, bad signature@.";
+		Refused "Bad signature")
 	else
 	begin
 		Mutex.lock lock;
@@ -275,14 +278,20 @@ let update_blockchain_with new_chain reward =
 			:: (exclude_all (List.flatten (List.map (fun e -> e.list_transactions) !mined_blocks))
 				!pending_transactions));
 	Mutex.unlock lock
+	
+let reward_user id =
+	Mutex.lock lock;
+	pending_transactions := !pending_transactions @
+		(List.init transactions_per_block (fun x -> make_transaction miningRewardFromAddress id 100));
+	Mutex.unlock lock
 		
 
 let connect_to_peer () =
     match !register with
         | None -> 
-			(pending_transactions := [make_transaction "root" "toto" 100;
+			(pending_transactions := [];(*[make_transaction "root" "toto" 100;
 			make_transaction "root" "toto" 100;
-			make_transaction "root" "toto" 100];)
+			make_transaction "root" "toto" 100];*))
         | Some r ->
             Format.printf "connecting to %d@." r;
             let in_chan, _ = connect_and_send r (Connect !port) in
@@ -337,6 +346,11 @@ let start_listener arg =
 			| GetTransactionStatus (bid, tid) ->
 				Format.printf "Received transaction status check request from wallet@.";
 				send out_chan (get_transaction_status_at bid tid);
+			| FreeCoins id ->
+				Format.printf "Giving free coins to %s@." (header id);
+				reward_user id;
+				let confirmed, pending = get_balance_of_address id in
+				send out_chan (Balance (id, confirmed, pending))
 			| _ -> Format.printf "Bad message type@.";
 		end
     done

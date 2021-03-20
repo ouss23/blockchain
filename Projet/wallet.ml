@@ -23,9 +23,7 @@ let user_exists name =
 	List.exists (fun x -> x.name = name) !users
 	
 let find_user name =
-	if user_exists name then
-		Some (List.find (fun x -> x.name = name) !users)
-	else None
+	(List.find (fun x -> x.name = name) !users)
 
 let () =
     while true do
@@ -39,8 +37,21 @@ let () =
 				else
 					let usr = create_user uname in
 					Format.printf "Created keypair for %s, public key starts with %s@." 
-						uname (String.sub usr.public_key 0 4)
+						uname (header usr.public_key)
 					
+			end
+		| "reward" :: uname :: _ ->
+			if not (user_exists uname) then
+				Format.printf "User %s has no keypair@." uname
+			else
+			begin
+				let usr = find_user uname in
+				let in_chan, out_chan = connect_and_send !port (FreeCoins usr.public_key) in
+				let answer = input_value in_chan in
+				match answer with
+				| Balance (id_, confirmed, pending) ->
+					Format.printf "Balance of %s is %d, pending balance is %d@." (header id_) confirmed pending
+				| _ -> Format.printf "Bad answer@."
 			end
         | "send" :: sender :: receiver :: amount :: _ -> 
 			begin
@@ -50,7 +61,10 @@ let () =
 					Format.printf "User %s has no keypair@." receiver
 				else
 				begin
-					let tr = make_transaction sender receiver (int_of_string amount) in
+					let rec_kp, sen_kp = (find_user receiver), (find_user sender) in
+					let tr = signed_transaction sen_kp.public_key rec_kp.public_key
+						(int_of_string amount) sen_kp.private_key in
+					Format.printf "Validity %b@." (is_valid tr);
 					let in_chan, out_chan = connect_and_send !port (AddTransaction tr)
 					in
 					let answer = input_value in_chan in
@@ -63,14 +77,18 @@ let () =
 						| _ -> Format.printf "Bad answer@.";
 				end
 			end
-		| "balance" :: id :: _ -> 
+		| "balance" :: uname :: _ -> 
 			begin
-				let in_chan, out_chan = connect_and_send !port (GetBalance id) in
-				let answer = input_value in_chan in
-				match answer with
-				| Balance (id_, confirmed, pending) ->
-					Format.printf "Balance of %s is %d, pending balance is %d@." id_ confirmed pending;
-				| _ -> Format.printf "Bad answer@.";
+				if not (user_exists uname) then
+					Format.printf "User %s has no keypair@." uname
+				else
+					let id = (find_user uname).public_key in
+					let in_chan, out_chan = connect_and_send !port (GetBalance id) in
+					let answer = input_value in_chan in
+					match answer with
+					| Balance (id_, confirmed, pending) ->
+						Format.printf "Balance of %s is %d, pending balance is %d@." (header id_) confirmed pending;
+					| _ -> Format.printf "Bad answer@.";
 			end
 		| "follow" :: bid :: tid :: _ ->
 			begin
@@ -78,10 +96,12 @@ let () =
 				(GetTransactionStatus (int_of_string bid, int_of_string tid)) in
 				let answer = input_value in_chan in
 				match answer with
-				| Pending (bl_id, tr_id) -> Format.printf "Transaction is pending, will be added to %d-%d@." bl_id tr_id;
+				| Pending (bl_id, tr_id) -> 
+					Format.printf "Transaction is pending, will be added to %d-%d@." bl_id tr_id;
 				| Accepted (bl_id, tr_id, tr, prf, bl_hs) ->
 					let tr_fake = make_transaction "fake toto" "fake titi" 10 in
 					Format.printf "Transaction added to %d-%d@." bl_id tr_id;
+					print_transaction tr;
 					Format.printf "Transaction authenticity : %b@." (authenticate (string_hash tr) prf bl_hs);
 					Format.printf "Testing authenticity with fake transaction : %b@." (authenticate (string_hash tr_fake) prf bl_hs);
 				| NotFound -> Format.printf "Transaction not found@."

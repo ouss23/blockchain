@@ -22,6 +22,7 @@ type message =
 	| Init of (S.t) * (transaction list) * (block list)
 	| MinedBlock of (block list) * transaction
 	| AddTransaction of transaction
+	| FreeCoins of string
 	| GetTransactionStatus of int * int
 	| TransactionStatus of transaction_status
 	| GetBalance of string
