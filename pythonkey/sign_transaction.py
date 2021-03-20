@@ -12,8 +12,9 @@ if __name__ == '__main__':
 
         signature = create_transaction(private_key, message)
         print(signature.hex())
-    except:
-        print("False")
+    except Exception as e:
+        print(False)
+        sys.exit(e)
 
 
     
