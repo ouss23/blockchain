@@ -31,10 +31,6 @@ if __name__ == '__main__':
         boo = verify_signature(public_key, message, signature)
         print(boo)
 
-    except:
-        print("False")
-
-
-
-
-
+    except Exception as e:
+        print(False)
+        sys.exit(e)
