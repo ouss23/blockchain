@@ -1,5 +1,5 @@
 open Unix
-open Cryptage
+open Encryption
 
 (* type de transactions *)
 type transaction = { fromAddress : string; toAddress : string; amount : int; timestamp : int; signature : string }
@@ -22,7 +22,6 @@ let signed_transaction from_address_arg to_address_arg amount_arg private_key =
 	let hsh = transaction_hash tr in
 	let sign = sign_transaction_method private_key hsh in
 	let tr_s = { tr with signature = sign } in
-	Format.printf "Signature %s@." tr_s.signature;
 	tr_s
 	
 let is_valid tr =
@@ -30,45 +29,6 @@ let is_valid tr =
 	else
 		let hsh = transaction_hash tr in
 		verify_sign_method tr.fromAddress hsh tr.signature
-	
-(*
-(*Pour signer une transaction il utilise cryptae.ml*)
-let sign_transaction transaction private_key = (
-	let public_key = create_public_key private_key in
-
-		if public_key ==  transaction.fromAddress then
-			begin
-				raise (Failure "you can't sign for another user!")
-			end;
-			
-	let tmp = transaction.fromAddress ^ transaction.toAddress ^ (string_of_int transaction.amount) in
-	let signature = sign_transaction_method private_key tmp in
-	transaction.signature <- signature;
-
-)
-
-(*Pour verifier que la signature d'un transaction est bonne*)
-let isValid transaction = (
-	if transaction.fromAddress =  "block chain" then
-		begin
-			true
-		end
-	else
-		begin
-			if transaction.fromAddress = "" then
-				begin
-				raise (Failure "Not signature")
-				end
-			else
-				begin
-				let public_key = transaction.fromAddress in
-				let message = transaction.fromAddress ^ transaction.toAddress ^ (string_of_int transaction.amount) in
-				let verify_sign = verify_sign_method public_key message transaction.signature in
-				verify_sign
-				end;
-			end;
-)
-*)
 	
 let header addr =
 	if String.length addr > 70 then

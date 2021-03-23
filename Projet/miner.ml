@@ -284,7 +284,6 @@ let reward_user id =
 	pending_transactions := !pending_transactions @
 		(List.init transactions_per_block (fun x -> make_transaction miningRewardFromAddress id 100));
 	Mutex.unlock lock
-		
 
 let connect_to_peer () =
     match !register with

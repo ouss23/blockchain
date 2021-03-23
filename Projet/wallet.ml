@@ -2,7 +2,7 @@ open Unix
 open Common
 open Transaction
 open Merkle_tree
-open Cryptage
+open Encryption
 
 let port = ref 8000
 
@@ -64,7 +64,6 @@ let () =
 					let rec_kp, sen_kp = (find_user receiver), (find_user sender) in
 					let tr = signed_transaction sen_kp.public_key rec_kp.public_key
 						(int_of_string amount) sen_kp.private_key in
-					Format.printf "Validity %b@." (is_valid tr);
 					let in_chan, out_chan = connect_and_send !port (AddTransaction tr)
 					in
 					let answer = input_value in_chan in

@@ -12,10 +12,6 @@ decorator==4.4.2
 defusedxml==0.7.1
 entrypoints==0.3
 idna==2.10
-ipykernel==5.5.0
-ipython==7.21.0
-ipython-genutils==0.2.0
-ipywidgets==7.6.3
 jedi==0.18.0
 Jinja2==2.11.3
 jsonschema==3.2.0
@@ -57,7 +53,6 @@ six==1.15.0
 terminado==0.9.3
 testpath==0.4.4
 tornado==6.1
-traitlets==5.0.5
 urllib3==1.26.4
 wcwidth==0.2.5
 webencodings==0.5.1
