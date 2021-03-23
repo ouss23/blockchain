@@ -14,6 +14,7 @@ let check d difficulty =
 let get_hash b =
     Digest.string (Marshal.to_string b [])
 
+(* voir si un bloc est mine *)
 let check_block b difficulty =
     check (get_hash b) difficulty
 

@@ -7,12 +7,11 @@ type t = E | N of Z.t * t * t * int
 
 let of_string s = Z.of_string_base 16 s
 
-(*let hash x =
-	of_string (Digest.string (Marshal.to_string x []))*)
-
+(* calculer le hashcode d'un objet m *)
 let string_hash m =
 	string_of_int (Hashtbl.hash m)
 
+(* transformer un hashcode en Z.t *)
 let hash m =
 	of_string (string_hash m)
 
