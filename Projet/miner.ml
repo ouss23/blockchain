@@ -71,6 +71,10 @@ let genesis_prev_hash = "0"
 (* un mutex protegeant l'acces a la liste de transactions et de blocs *)
 let lock = Mutex.create()
 
+let print_blockchain () =
+	List.iter print_block !mined_blocks;
+	Format.printf "@."
+
 (* verifier si une liste de blocs est correcte
 l'enchainement des hashes + les bons nonces *)
 let check_blocks_authenticity b_l =
@@ -164,7 +168,9 @@ let mine_pending_transactions mining_reward_address = (
 				let reward = make_transaction mining_reward_source mining_reward_address miningReward in
     			pending_transactions := reward :: (exclude_all first_transactions !pending_transactions);
 				Format.printf "Block %d mined with nonce %d, broadcasting blockchain...@." b.id b.nonce;
-				broadcast (MinedBlock (!mined_blocks, reward))
+				broadcast (MinedBlock (!mined_blocks, reward));
+				Format.printf "Current blockchain :@.";
+				print_blockchain ()
 			end
 			else
 				(* bloc mine par un autre miner *)
@@ -415,6 +421,7 @@ let start_listener arg =
 				send out_chan (Balance (id, confirmed, pending))
 			| _ -> Format.printf "Bad message type@.";
 		end
+		else Format.printf "Ignoring duplicate message@."
     done
 	
 let () =

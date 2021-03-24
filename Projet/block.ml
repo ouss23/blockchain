@@ -29,4 +29,5 @@ let check_block b difficulty =
     check (get_hash b) difficulty
 
 let print_block b =
-    Format.printf "Bloc : id = %d, prev_hash = [%s], nonce = %d, transactions count = %d @." b.id b.prev_hash b.nonce (List.length b.list_transactions);
+    Format.printf "Bloc : id = %d, hash root = [%s], nonce = %d, transactions count = %d @." b.id b.hash_root b.nonce (List.length b.list_transactions);
+	print_transactions b.list_transactions
