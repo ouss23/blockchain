@@ -125,6 +125,16 @@ let () =
 				| NotFound -> Format.printf "Transaction not found@."
 				| _ -> Format.printf "Bad answer@.";
 			end
+		| "help" :: _ -> 
+			begin
+			Format.printf "Use one of the following commands :@.";
+			Format.printf "\tcreate username : create a new keypair and associate it with 'username'@.";
+			Format.printf "\treward username : give free coins to 'username', use it only once in the beginning@.";
+			Format.printf "\tsend sender receiver amount : transfer 'amount' money from 'sender' to 'receiver'@.";
+			Format.printf "\tbalance username : check the validated and the pending balance of 'username'@.";
+			Format.printf "\tfollow b t : check the status of the t-th transaction of the b-th block@.";
+			Format.printf "\tend : quit@.";
+			end
         | "end" :: _ -> exit 0
 		| _ -> Format.printf "Wrong command %s@." line;
     done

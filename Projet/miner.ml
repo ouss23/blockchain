@@ -294,11 +294,11 @@ let valid_balances blockchain pending =
 		if ((List.mem addr l) || (addr = mining_reward_source)) then l else (addr :: l))
 		addresses [] in
 	Format.printf "Unique addresses :@.";
-	List.iter (fun a -> Format.printf "%s@." (header a)) unique_addr;
+	List.iter (fun a -> Format.printf "\t%s@." (header a)) unique_addr;
 	(* on calcule le solde de toutes les adresses *)
 	let balances = List.map (fun addr -> get_balance_of_address addr blockchain pending) unique_addr in
 	Format.printf "Balances & pending :@.";
-	List.iter (fun (b, p) -> Format.printf "%d -> %d@." b p) balances;
+	List.iter (fun (b, p) -> Format.printf "\t%d -> %d@." b p) balances;
 	(* on regarde si tous les soldes & soldes en attentes sont positifs *)
 	let flat_b = List.fold_right (fun (b, p) l -> (b :: p :: l)) balances [] in
 	not (List.exists (fun b -> b < 0) flat_b)
